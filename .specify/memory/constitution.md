@@ -1,50 +1,41 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+    Sync Impact Report:
+
+    - Version change: 0.0.0 → 1.0.0
+    - Added Principles:
+      - I. Full-Stack Web Application
+      - II. Backend: Laravel
+      - III. Frontend: React via Inertia.js
+      - IV. Database: Relational by Default
+    - Updated Sections:
+      - "Development Workflow"
+      - "Testing"
+      - "Governance"
+    - Templates requiring updates:
+      - ✅ .specify/templates/plan-template.md
+      - ✅ .specify/templates/spec-template.md
+      - ✅ .specify/templates/tasks-template.md
+-->
+# Synthetic Data Generator Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Full-Stack Web Application
+The project is a monolithic web application built with a modern, integrated technology stack. This ensures a streamlined development workflow and cohesive user experience.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Backend: Laravel
+The backend MUST be implemented using the Laravel PHP framework. This provides a robust, scalable, and maintainable foundation with a rich ecosystem of tools for routing, authentication, and data management.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Frontend: React via Inertia.js
+The frontend MUST be developed using React and seamlessly connected to the Laravel backend via Inertia.js. This approach enables the creation of a dynamic, single-page application (SPA) experience without the complexity of a separate API-driven architecture.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Database: Relational by Default
+The application MUST use a relational database (e.g., MySQL, PostgreSQL) managed through Laravel's Eloquent ORM. This ensures data integrity and simplifies database interactions.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
-
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
+Development will follow standard Laravel and React practices. All code MUST adhere to PSR-12 for PHP and a standard JavaScript style guide (e.g., Airbnb) enforced by linters.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+All code contributions must be submitted via Pull Requests and reviewed for compliance with these principles before being merged. This constitution is the source of truth for the project's architecture and technology choices.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-12-23 | **Last Amended**: 2025-12-23

@@ -17,10 +17,10 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., PHP 8.2, Node.js 20.x or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., Laravel, Inertia.js, React or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, MySQL, files or N/A]  
+**Testing**: [e.g., PHPUnit, Pest, Jest, Vitest or NEEDS CLARIFICATION]  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 **Project Type**: [single/web/mobile - determines source structure]  
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
@@ -68,20 +68,29 @@ tests/
 ├── integration/
 └── unit/
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+# [REMOVE IF UNUSED] Option 2: Web application (Laravel + Inertia/React)
+app/
+├── Http/
+│   ├── Controllers/
+│   └── Middleware/
+├── Models/
+└── Providers/
 
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
+database/
+└── migrations/
+
+resources/
+└── js/
+    ├── Components/
+    ├── Layouts/
+    └── Pages/
+
+routes/
+└── web.php
+
+tests/
+├── Feature/
+└── Unit/
 
 # [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
 api/
