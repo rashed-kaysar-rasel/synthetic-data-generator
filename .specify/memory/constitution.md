@@ -1,41 +1,68 @@
 <!--
-    Sync Impact Report:
-
-    - Version change: 0.0.0 → 1.0.0
-    - Added Principles:
-      - I. Full-Stack Web Application
-      - II. Backend: Laravel
-      - III. Frontend: React via Inertia.js
-      - IV. Database: Relational by Default
-    - Updated Sections:
-      - "Development Workflow"
-      - "Testing"
-      - "Governance"
-    - Templates requiring updates:
-      - ✅ .specify/templates/plan-template.md
-      - ✅ .specify/templates/spec-template.md
-      - ✅ .specify/templates/tasks-template.md
+Sync Impact Report
+- Version change: N/A -> 1.0.0
+- Modified principles: N/A (new constitution)
+- Added sections: Core Principles, Technical Constraints, Development Workflow, Governance
+- Removed sections: None
+- Templates requiring updates:
+  - ✅ .specify/templates/plan-template.md (no change needed)
+  - ✅ .specify/templates/spec-template.md (no change needed)
+  - ✅ .specify/templates/tasks-template.md (no change needed)
+  - ⚠️ .specify/templates/commands/*.md (folder not present)
+  - ✅ README.md (updated)
+  - ✅ GEMINI.md (updated)
+- Follow-up TODOs:
+  - TODO(RATIFICATION_DATE): Original adoption date not recorded; confirm once known.
 -->
 # Synthetic Data Generator Constitution
 
 ## Core Principles
 
-### I. Full-Stack Web Application
-The project is a monolithic web application built with a modern, integrated technology stack. This ensures a streamlined development workflow and cohesive user experience.
+### I. Schema-First Workflow
+All generation flows MUST begin with a user-provided SQL DDL schema. The system
+MUST derive configuration options from the parsed schema and MUST not allow
+generation without a valid schema.
 
-### II. Backend: Laravel
-The backend MUST be implemented using the Laravel PHP framework. This provides a robust, scalable, and maintainable foundation with a rich ecosystem of tools for routing, authentication, and data management.
+### II. Relational Integrity
+Generated data MUST respect primary and foreign key relationships. Table order
+MUST be derived from dependency sorting, and foreign key values MUST be sampled
+from generated parent rows.
 
-### III. Frontend: React via Inertia.js
-The frontend MUST be developed using React and seamlessly connected to the Laravel backend via Inertia.js. This approach enables the creation of a dynamic, single-page application (SPA) experience without the complexity of a separate API-driven architecture.
+### III. Synthetic Data Safety
+Only synthetic data MAY be generated or stored. The system MUST NOT ingest or
+reuse real user data, and defaults MUST use built-in fake data providers.
 
-### IV. Database: Relational by Default
-The application MUST use a relational database (e.g., MySQL, PostgreSQL) managed through Laravel's Eloquent ORM. This ensures data integrity and simplifies database interactions.
+### IV. Transparent Job Feedback
+Background generation jobs MUST expose clear status (pending, completed, failed)
+and actionable errors. Users MUST be able to retry a failed job without losing
+their configuration.
+
+### V. Blade-First Frontend
+The frontend MUST use Blade templates with HTML, Tailwind CSS, and vanilla
+JavaScript. SPA frameworks (React, Inertia.js) and component libraries tied to
+those frameworks are not permitted.
+
+## Technical Constraints
+
+- Backend MUST remain a Laravel application.
+- Frontend MUST be rendered server-side with Blade.
+- Styling MUST use Tailwind CSS.
+- Frontend behavior MUST use vanilla JavaScript and fetch APIs.
 
 ## Development Workflow
-Development will follow standard Laravel and React practices. All code MUST adhere to PSR-12 for PHP and a standard JavaScript style guide (e.g., Airbnb) enforced by linters.
+
+- Specs and plans MUST include a Constitution Check before implementation.
+- Changes that violate a principle MUST include explicit justification and an
+  approved exception in the plan.
+- Keep UI changes accessible and responsive; avoid framework-specific patterns
+  that conflict with Blade rendering.
 
 ## Governance
-All code contributions must be submitted via Pull Requests and reviewed for compliance with these principles before being merged. This constitution is the source of truth for the project's architecture and technology choices.
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-23 | **Last Amended**: 2025-12-23
+- This constitution is the highest-level project guideline and supersedes other
+  docs when conflicts arise.
+- Amendments MUST update this file, include a version bump, and update dependent
+  templates and runtime guidance files.
+- Compliance MUST be reviewed in specs and plans for each feature.
+
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): Original adoption date not recorded. | **Last Amended**: 2025-12-26

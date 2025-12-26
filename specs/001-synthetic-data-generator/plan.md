@@ -5,14 +5,17 @@
 
 ## Summary
 
-This plan outlines the implementation of a web-based synthetic data generator. The system will parse a user-provided SQL DDL file, allow the user to configure data generation rules, and then generate and stream a downloadable SQL or CSV file. The architecture is a standard Laravel application with a React frontend delivered via Inertia.js.
+This plan outlines the implementation of a web-based synthetic data generator. The system
+parses a user-provided SQL DDL file, lets the user configure data generation rules, and
+then generates a downloadable SQL or CSV file. The architecture is a standard Laravel
+application with Blade-rendered views and vanilla JavaScript for interactivity.
 
 ## Technical Context
 
 **Language/Version**: PHP 8.3+, Node.js 22.x
-**Primary Dependencies**: Laravel 12, Inertia.js, React, shadcn/ui, php-sql-parser, Laravel Queues
+**Primary Dependencies**: Laravel 12, Tailwind CSS, Vite, php-sql-parser, Laravel Queues
 **Storage**: MySQL
-**Testing**: Pest (PHP), Jest (JS)
+**Testing**: PHPUnit (PHP)
 **Target Platform**: Web (Modern Browsers)
 **Project Type**: Web application
 **Performance Goals**: Generate 1 million rows in under 5 minutes. Parse a 1MB DDL file in under 5 seconds.
@@ -23,10 +26,11 @@ This plan outlines the implementation of a web-based synthetic data generator. T
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
--   **I. Full-Stack Web Application**: PASS. The project is a standard monolithic web application.
--   **II. Backend: Laravel**: PASS. The backend will be built with Laravel.
--   **III. Frontend: React via Inertia.js**: PASS. The frontend will use React and Inertia.js.
--   **IV. Database: Relational by Default**: PASS. The project will use MySQL.
+- **I. Schema-First Workflow**: PASS. All flows begin with a DDL upload.
+- **II. Relational Integrity**: PASS. Generation respects foreign keys.
+- **III. Synthetic Data Safety**: PASS. Only Faker-backed data is generated.
+- **IV. Transparent Job Feedback**: PASS. Job status is visible and retryable.
+- **V. Blade-First Frontend**: PASS. UI uses Blade, Tailwind, and vanilla JS.
 
 All constitution gates pass. No violations.
 
@@ -36,54 +40,55 @@ All constitution gates pass. No violations.
 
 ```text
 specs/001-synthetic-data-generator/
-├── plan.md              # This file
-├── research.md          # Phase 0 output
-├── data-model.md        # Phase 1 output
-├── quickstart.md        # Phase 1 output
-├── contracts/           # Phase 1 output
-│   └── http-routes.md
-└── tasks.md             # Phase 2 output
+|-- plan.md              # This file
+|-- research.md          # Phase 0 output
+|-- data-model.md        # Phase 1 output
+|-- quickstart.md        # Phase 1 output
+|-- contracts/           # Phase 1 output
+|   |-- http-routes.md
+`-- tasks.md             # Phase 2 output
 ```
 
 ### Source Code (repository root)
 
 ```text
-app/
-├── Http/
-│   ├── Controllers/
-│   │   ├── DataGenerationController.php
-│   │   └── SchemaController.php
-│   └── Middleware/
-├── Jobs/
-│   └── GenerateDataJob.php
-├── Models/
-│   # No Eloquent models needed for the core feature, as it operates on user-provided schema
-└── Services/
-    ├── DdlParserService.php
-    ├── DataGeneratorService.php
-    └── TopologicalSortService.php
-
-database/
-└── migrations/
-    # No migrations needed for the core feature itself
-
-resources/
-└── js/
-    ├── Components/  # Reusable React components (shadcn/ui)
-    ├── Layouts/
-    └── Pages/
-        ├── Generator/Index.jsx
-        └── Generator/Configure.jsx
-
-routes/
-└── web.php
-
-tests/
-├── Feature/
-└── Unit/
+backend/
+|-- app/
+|   |-- Http/
+|   |   `-- Controllers/
+|   |       |-- DataGenerationController.php
+|   |       `-- SchemaController.php
+|   |-- Jobs/
+|   |   `-- GenerateDataJob.php
+|   |-- Models/
+|   |   # No Eloquent models needed for the core feature
+|   `-- Services/
+|       |-- DataGeneratorService.php
+|       |-- SqlParserService.php
+|       `-- TopologicalSortService.php
+|-- resources/
+|   |-- css/
+|   |   `-- app.css
+|   |-- js/
+|   |   |-- app.js
+|   |   `-- generator.js
+|   `-- views/
+|       |-- generator/
+|       |   |-- configure.blade.php
+|       |   `-- index.blade.php
+|       `-- layouts/
+|           `-- app.blade.php
+|-- routes/
+|   `-- web.php
+`-- tests/
+    |-- Feature/
+    `-- Unit/
 ```
 
-**Structure Decision**: The project will use the standard Laravel 12 project structure. The frontend code will live in `resources/js` as is conventional for Inertia.js applications. The core logic will be encapsulated in Service classes within the `app/Services` directory. Background jobs will be handled by Laravel Queues.
+**Structure Decision**: The project uses the standard Laravel 12 structure. UI is rendered
+with Blade views in `resources/views`, styling via Tailwind in `resources/css`, and
+page behavior in `resources/js`. Core logic lives in `app/Services`, and background
+jobs use Laravel Queues.
 
 ## Complexity Tracking
 

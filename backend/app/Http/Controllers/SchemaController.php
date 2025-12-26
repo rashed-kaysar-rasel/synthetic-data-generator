@@ -6,13 +6,12 @@ use App\Services\SqlParserService;
 use App\Services\TopologicalSortService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
-use Inertia\Inertia;
 
 class SchemaController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Generator/Index');
+        return view('generator.index');
     }
 
     public function store(Request $request, SqlParserService $parser, TopologicalSortService $sorter)
@@ -24,6 +23,10 @@ class SchemaController extends Controller
         $sql = $request->file('ddl_file')->get();
 
         $schema = $parser->parse($sql);
+
+        if (!empty($schema['error'])) {
+            return back()->withErrors(['ddl_file' => $schema['error']]);
+        }
 
         if (empty($schema['tables'])) {
             return back()->withErrors(['ddl_file' => 'Could not parse any tables from the provided file.']);
@@ -45,10 +48,9 @@ class SchemaController extends Controller
             return redirect()->route('generator.index');
         }
 
-        return Inertia::render('Generator/Configure', [
+        return view('generator.configure', [
             'schema' => $schema,
             'dataProviders' => Config::get('data_providers.providers'),
         ]);
     }
 }
-

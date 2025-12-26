@@ -2,7 +2,9 @@
 
 **Date**: 2025-12-23
 
-This document outlines the primary web routes for the application. As this is an Inertia.js application, there is no separate API. These routes handle page loads and form submissions.
+This document outlines the primary web routes for the application. The UI is rendered
+with Blade templates and enhanced with JavaScript. These routes handle page loads and
+form submissions.
 
 ## Page Routes
 
@@ -10,13 +12,13 @@ This document outlines the primary web routes for the application. As this is an
 
 -   **Controller**: `SchemaController@index`
 -   **Description**: Displays the main page where users can upload their SQL DDL file.
--   **Inertia Component**: `Generator/Index.jsx`
+-   **Blade View**: `resources/views/generator/index.blade.php`
 
 ### 2. `GET /configure`
 
 -   **Controller**: `SchemaController@show`
 -   **Description**: Displays the schema visualization and configuration UI. This page is shown after a schema has been successfully parsed and stored in the session.
--   **Inertia Component**: `Generator/Configure.jsx`
+-   **Blade View**: `resources/views/generator/configure.blade.php`
 -   **Data Passed**: The parsed schema structure (tables, columns, relationships).
 
 ## Action Routes

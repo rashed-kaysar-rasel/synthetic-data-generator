@@ -21,11 +21,11 @@ This tool aims to simplify the process of populating development and testing dat
 ## Technical Stack
 
 -   **Backend**: PHP 8.3+, Laravel 12, Laravel Queues
--   **Frontend**: Node.js 22.x+, React, Inertia.js, shadcn/ui
+-   **Frontend**: Node.js 22.x+, Blade, Tailwind CSS, vanilla JavaScript
 -   **Database Parsing**: `php-sql-parser`
 -   **Fake Data Generation**: Faker library (integrated into PHP backend)
 -   **Database**: MySQL (for application's own data, not generated data)
--   **Testing**: Pest (PHP), Jest (JS)
+-   **Testing**: PHPUnit (PHP)
 -   **Deployment Target**: Web (Modern Browsers)
 
 ## Prerequisites
