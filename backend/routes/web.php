@@ -1,14 +1,11 @@
 <?php
 
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SchemaController;
 use App\Http\Controllers\DataGenerationController;
 
 // Page Routes
-Route::get('/', function () {
-    return Inertia::render('Generator/Index');
-});
+Route::get('/', [SchemaController::class, 'index'])->name('generator.index');
 Route::get('/configure', [SchemaController::class, 'show'])->name('generator.configure');
 
 // Action Routes

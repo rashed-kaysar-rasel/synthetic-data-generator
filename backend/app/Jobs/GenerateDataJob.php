@@ -38,17 +38,25 @@ class GenerateDataJob implements ShouldQueue
     public $userId;
 
     /**
+     * Output file name for generated data.
+     *
+     * @var string
+     */
+    public $outputFileName;
+
+    /**
      * Create a new job instance.
      *
      * @param array $generationConfig
      * @param int $userId
      * @return void
      */
-    public function __construct(array $generationConfig, int $userId)
+    public function __construct(array $generationConfig, int $userId, string $outputFileName)
     {
         $this->generationConfig = $generationConfig;
         $this->userId = $userId;
         $this->schema = Session::get('schema');
+        $this->outputFileName = $outputFileName;
     }
 
     /**
@@ -61,7 +69,11 @@ class GenerateDataJob implements ShouldQueue
     {
         try {
             // Generate the data
-            $filePath = $generatorService->generate($this->generationConfig, $this->schema);
+            $filePath = $generatorService->generate(
+                $this->generationConfig,
+                $this->schema,
+                $this->outputFileName
+            );
 
             // TODO: Notify user on completion
             // event(new DataGenerationCompleted($this->userId, $filePath));

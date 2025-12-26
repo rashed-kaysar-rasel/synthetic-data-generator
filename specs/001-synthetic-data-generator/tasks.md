@@ -13,7 +13,7 @@
 
 ## Path Conventions
 
-- **Web app (Laravel/Inertia)**: `app/`, `routes/`, `resources/js/`, `tests/`
+- **Web app (Laravel + Blade)**: `app/`, `routes/`, `resources/views/`, `resources/js/`, `tests/`
 
 ---
 
@@ -22,11 +22,9 @@
 **Purpose**: Project initialization and basic structure
 
 - [X] T001 [P] Create a new Laravel 12 project
-- [X] T002 [P] Install Laravel Inertia and configure it for React
+- [X] T002 [P] Configure Vite with Tailwind CSS for Blade views
 - [X] T003 [P] Install Composer dependency `php-sql-parser`
-- [X] T004 [P] Install NPM dependencies for shadcn/ui
-- [X] T005 [P] Configure `.env` file with database credentials
-- [X] T006 Initialize `shadcn/ui` in the project
+- [X] T004 [P] Configure `.env` file with database credentials
 
 ---
 
@@ -34,17 +32,17 @@
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [X] T007 [P] Create the main application layout in `resources/js/Layouts/App.jsx`
-- [X] T008 [P] Create the main controllers `SchemaController.php` and `DataGenerationController.php`
-- [X] T009 [P] Create service stubs: `SqlParserService.php`, `TopologicalSortService.php`, `DataGeneratorService.php` in `app/Services/`
-- [X] T010 Define the primary routes (`/`, `/schema`, `/configure`, `/generate`, `/jobs/{id}`, `/download/{file}`) in `routes/web.php`
-- [X] T011 Create the main Inertia page component in `resources/js/Pages/Generator/Index.jsx`
+- [X] T005 [P] Create the main layout in `resources/views/layouts/app.blade.php`
+- [X] T006 [P] Create the main controllers `SchemaController.php` and `DataGenerationController.php`
+- [X] T007 [P] Create service stubs: `SqlParserService.php`, `TopologicalSortService.php`, `DataGeneratorService.php` in `app/Services/`
+- [X] T008 Define the primary routes (`/`, `/schema`, `/configure`, `/generate`, `/jobs/{id}`, `/download/{file}`) in `routes/web.php`
+- [X] T009 Create the upload view in `resources/views/generator/index.blade.php`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Phase 3: User Story 1 - Schema Upload and Visualization (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Schema Upload and Visualization (Priority: P1) MVP
 
 **Goal**: Allow a user to upload a SQL file and see the parsed schema.
 
@@ -52,14 +50,14 @@
 
 ### Implementation for User Story 1
 
-- [X] T012 [P] [US1] Build the file upload form in `resources/js/Pages/Generator/Index.jsx`
-- [X] T013 [US1] Implement the `store` method in `app/Http/Controllers/SchemaController.php` to handle file upload
-- [X] T014 [US1] Implement the `SqlParserService` in `app/Services/SqlParserService.php` to parse the uploaded file content using `php-sql-parser`
-- [X] T015 [US1] Implement the `TopologicalSortService` in `app/Services/TopologicalSortService.php` to order the parsed tables
-- [X] T016 [US1] Store the parsed and sorted schema in the user's session
-- [X] T017 [US1] Create the configuration page component `resources/js/Pages/Generator/Configure.jsx`
-- [X] T018 [US1] Implement the `show` method in `app/Http/Controllers/SchemaController.php` to display the `Configure` page with schema data from the session
-- [X] T019 [US1] Build the UI to display tables, columns, and relationships in `resources/js/Pages/Generator/Configure.jsx`
+- [X] T010 [P] [US1] Build the file upload form in `resources/views/generator/index.blade.php`
+- [X] T011 [US1] Implement the `store` method in `app/Http/Controllers/SchemaController.php` to handle file upload
+- [X] T012 [US1] Implement the `SqlParserService` in `app/Services/SqlParserService.php` to parse the uploaded file content using `php-sql-parser`
+- [X] T013 [US1] Implement the `TopologicalSortService` in `app/Services/TopologicalSortService.php` to order the parsed tables
+- [X] T014 [US1] Store the parsed and sorted schema in the user's session
+- [X] T015 [US1] Create the configuration view `resources/views/generator/configure.blade.php`
+- [X] T016 [US1] Implement the `show` method in `app/Http/Controllers/SchemaController.php` to display the configure view with schema data from the session
+- [X] T017 [US1] Build the UI to display tables, columns, and relationships in `resources/views/generator/configure.blade.php`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -69,15 +67,14 @@
 
 **Goal**: Allow a user to configure data generation rules for the visualized schema.
 
-**Independent Test**: On the `/configure` page, a user can select a column and assign a data provider, and set the number of rows for a table. The configuration is stored in the frontend state.
+**Independent Test**: On the `/configure` page, a user can assign a data provider to a column and set the number of rows for a table. The configuration is stored in the page state.
 
 ### Implementation for User Story 2
 
-- [X] T020 [P] [US2] Create a configuration file `config/data_providers.php` to define the list of available fake data providers
-- [X] T021 [P] [US2] Create a UI component for selecting a data provider in `resources/js/Components/`
-- [X] T022 [P] [US2] Create a UI component for inputting row counts in `resources/js/Components/`
-- [X] T023 [US2] Integrate the new components into the `resources/js/Pages/Generator/Configure.jsx` page
-- [X] T024 [US2] Implement frontend state management (e.g., using React hooks) on the `Configure` page to hold the `GenerationConfig` object
+- [X] T018 [P] [US2] Create a configuration file `config/data_providers.php` to define the list of available fake data providers
+- [X] T019 [P] [US2] Add provider selection inputs in `resources/views/generator/configure.blade.php`
+- [X] T020 [P] [US2] Add row count inputs in `resources/views/generator/configure.blade.php`
+- [X] T021 [US2] Implement client-side config handling in `resources/js/generator.js`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -91,15 +88,15 @@
 
 ### Implementation for User Story 3
 
-- [X] T025 [P] [US3] Create the `GenerateDataJob` in `app/Jobs/GenerateDataJob.php`
-- [X] T026 [P] [US3] Implement the `store` method in `app/Http/Controllers/DataGenerationController.php` to validate the configuration and dispatch the `GenerateDataJob`
-- [X] T027 [US3] Implement the core logic in `app/Services/DataGeneratorService.php` to generate data based on the `GenerationConfig` using PHP Generators for memory efficiency
-- [X] T028 [US3] Add logic to `DataGeneratorService` to format the output as SQL INSERT statements
-- [X] T029 [US3] Add logic to `DataGeneratorService` to format the output as CSV and package it into a ZIP file
-- [X] T030 [US3] Implement the job status endpoint in `DataGenerationController@show`
-- [X] T031 [US3] Implement the download endpoint in `DataGenerationController@download`
-- [X] T032 [US3] Add a "Generate" button and form to the `Configure` page to submit the configuration
-- [X] T033 [US3] Add frontend logic to the `Configure` page to poll the job status endpoint and display the download link upon completion
+- [X] T022 [P] [US3] Create the `GenerateDataJob` in `app/Jobs/GenerateDataJob.php`
+- [X] T023 [P] [US3] Implement the `store` method in `app/Http/Controllers/DataGenerationController.php` to validate the configuration and dispatch the `GenerateDataJob`
+- [X] T024 [US3] Implement the core logic in `app/Services/DataGeneratorService.php` to generate data based on the `GenerationConfig` using PHP Generators for memory efficiency
+- [X] T025 [US3] Add logic to `DataGeneratorService` to format the output as SQL INSERT statements
+- [X] T026 [US3] Add logic to `DataGeneratorService` to format the output as CSV and package it into a ZIP file
+- [X] T027 [US3] Implement the job status endpoint in `DataGenerationController@show`
+- [X] T028 [US3] Implement the download endpoint in `DataGenerationController@download`
+- [X] T029 [US3] Add a "Generate" button and form to the configure view
+- [X] T030 [US3] Add frontend logic in `resources/js/generator.js` to submit config and poll job status
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -109,11 +106,11 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [X] T034 [P] Implement detailed validation for the `GenerationConfig` on the backend
-- [X] T035 [P] Implement UI for displaying job failure messages with retry option as per clarification
-- [X] T036 Refine UI/UX using `shadcn/ui` components for a polished look and feel
-- [X] T037 Add comprehensive comments to service classes
-- [X] T038 Write the project `README.md` file with setup and usage instructions
+- [X] T031 [P] Implement detailed validation for the `GenerationConfig` on the backend
+- [X] T032 [P] Implement UI for displaying job failure messages with retry option
+- [X] T033 Refine UI/UX with Tailwind CSS styling
+- [X] T034 Add comprehensive comments to service classes
+- [X] T035 Write the project `README.md` file with setup and usage instructions
 
 ---
 
@@ -124,7 +121,7 @@
 - **Setup (Phase 1)**: No dependencies - can start immediately.
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories.
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion.
-  - User stories can then proceed in parallel if staffed, or sequentially in priority order (P1 → P2 → P3).
+  - User stories can then proceed in parallel if staffed, or sequentially in priority order (P1 -> P2 -> P3).
 
 ### User Story Dependencies
 
@@ -145,10 +142,10 @@
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → MVP is ready
-3. Add User Story 2 → Test independently
-4. Add User Story 3 → Test independently → Full feature is ready
+1. Complete Setup + Foundational -> Foundation ready
+2. Add User Story 1 -> Test independently -> MVP is ready
+3. Add User Story 2 -> Test independently
+4. Add User Story 3 -> Test independently -> Full feature is ready
 5. Complete Polish phase
 
 ---

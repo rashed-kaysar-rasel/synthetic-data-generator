@@ -1,6 +1,6 @@
 # Quickstart: Synthetic Data Generator
 
-**Date**: 2025-12-23
+**Date**: 2025-12-26
 
 This guide provides instructions for setting up and running the project locally.
 
@@ -22,59 +22,63 @@ This guide provides instructions for setting up and running the project locally.
 
 2.  **Install PHP dependencies**:
     ```bash
+    cd backend
     composer install
+    cd ..
     ```
 
 3.  **Install JavaScript dependencies**:
     ```bash
+    cd backend
     npm install
     # or
     yarn install
+    cd ..
     ```
 
 4.  **Set up environment file**:
     -   Copy the `.env.example` file to `.env`:
         ```bash
-        cp .env.example .env
+        cp backend/.env.example backend/.env
         ```
     -   Generate an application key:
         ```bash
-        php artisan key:generate
+        php artisan key:generate --path=backend/
         ```
 
 5.  **Configure your `.env` file**:
-    -   Update the `DB_*` variables to point to your local MySQL database.
+    -   Update the `DB_*` variables in `backend/.env` to point to your local MySQL database.
     -   Configure a queue driver. For local development, `sync` or `database` is recommended. To use the `database` driver, run:
         ```bash
-        php artisan queue:table
-        php artisan migrate
+        php artisan queue:table --path=backend/
+        php artisan migrate --path=backend/
         ```
 
 6.  **Run database migrations**:
     ```bash
-    php artisan migrate
+    php artisan migrate --path=backend/
     ```
 
 7.  **Build frontend assets**:
     -   For development (with hot-reloading):
         ```bash
-        npm run dev
+        npm run dev --prefix backend/
         ```
     -   For production:
         ```bash
-        npm run build
+        npm run build --prefix backend/
         ```
 
 ## Running the Application
 
 1.  **Start the development server**:
     ```bash
-    php artisan serve
+    php artisan serve --working-dir=backend/
     ```
 
 2.  **Start the queue worker** (if not using the `sync` driver):
     ```bash
-    php artisan queue:work
+    php artisan queue:work --working-dir=backend/
     ```
 
 3.  **Access the application**:

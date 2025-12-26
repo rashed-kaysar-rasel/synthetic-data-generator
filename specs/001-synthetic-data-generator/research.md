@@ -11,13 +11,14 @@
     -   Writing a custom parser: This would be too time-consuming and error-prone.
     -   Other libraries: `php-sql-parser` is the most mature and widely used option in the PHP ecosystem.
 
-## 2. UI Component Library
+## 2. Frontend UI Approach
 
--   **Decision**: Use `shadcn/ui`.
--   **Rationale**: The user explicitly requested `shadcn/ui`. It's a modern, accessible, and highly customizable component library for React. It provides a great foundation for building the configuration UI quickly while maintaining a professional look and feel. The components are unstyled by default, giving us full control over the application's appearance.
+-   **Decision**: Use Blade templates with Tailwind CSS and vanilla JavaScript.
+-   **Rationale**: This aligns with the project's constitution and keeps the UI simple,
+    server-rendered, and maintainable without SPA frameworks.
 -   **Alternatives considered**:
-    -   Material-UI, Ant Design: These are more opinionated component libraries. `shadcn/ui` offers more flexibility.
-    -   Building components from scratch: This would be too time-consuming for the initial version.
+    -   React + Inertia.js: Rejected to meet the Blade-first constraint.
+    -   Heavy component libraries: Rejected to keep the UI lightweight and framework-agnostic.
 
 ## 3. Background Job Processing
 
