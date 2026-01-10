@@ -38,6 +38,18 @@ class DataGeneratorService
     protected $generatedPrimaryKeys = [];
 
     /**
+     * Stores generated values for columns referenced by foreign keys.
+     * @var array
+     */
+    protected $generatedColumnValues = [];
+
+    /**
+     * Columns referenced by foreign keys keyed by table.
+     * @var array
+     */
+    protected $referencedColumnsByTable = [];
+
+    /**
      * Track unique constraint values per table.
      * @var array
      */
@@ -83,10 +95,12 @@ class DataGeneratorService
         $this->generationConfig = $generationConfig;
         $this->schema = $schema;
         $this->generatedPrimaryKeys = [];
+        $this->generatedColumnValues = [];
         $this->uniqueValues = [];
         $this->autoIncrementCounters = [];
         $this->uniqueColumnCounters = [];
         $this->uniqueConstraints = $this->buildUniqueConstraints($schema);
+        $this->referencedColumnsByTable = $this->buildReferencedColumnsMap($schema['relationships'] ?? []);
 
         $format = $this->generationConfig['format'];
         
@@ -205,6 +219,7 @@ class DataGeneratorService
         }
 
         $this->ensureUniqueConstraints($tableName, $tableConfig, $tableSchema, $rowData);
+        $this->recordGeneratedColumnValues($tableName, $rowData);
 
         foreach ($tableSchema['columns'] as $columnSchema) {
             if ($columnSchema['isPrimaryKey']) {
@@ -233,6 +248,44 @@ class DataGeneratorService
         }
 
         return $ordered;
+    }
+
+    protected function buildReferencedColumnsMap(array $relationships): array
+    {
+        $map = [];
+        foreach ($relationships as $relationship) {
+            $table = $relationship['to_table'] ?? null;
+            $column = $relationship['to_column'] ?? null;
+            if (!$table || !$column) {
+                continue;
+            }
+            $map[$table][$column] = true;
+        }
+
+        foreach ($map as $table => $columns) {
+            $map[$table] = array_keys($columns);
+        }
+
+        return $map;
+    }
+
+    protected function recordGeneratedColumnValues(string $tableName, array $rowData): void
+    {
+        $columns = $this->referencedColumnsByTable[$tableName] ?? [];
+        if (!$columns) {
+            return;
+        }
+
+        foreach ($columns as $columnName) {
+            if (!array_key_exists($columnName, $rowData)) {
+                continue;
+            }
+            $value = $rowData[$columnName];
+            if ($value === null) {
+                continue;
+            }
+            $this->generatedColumnValues[$tableName][$columnName][] = $value;
+        }
     }
 
     /**
@@ -353,13 +406,20 @@ class DataGeneratorService
                 return $rel['from_table'] === $tableName && $rel['from_column'] === $columnName;
             });
 
-            if ($relationship && isset($this->generatedPrimaryKeys[$relationship['to_table']])) {
-                return $this->faker->randomElement($this->generatedPrimaryKeys[$relationship['to_table']]);
-            }
-            if ($relationship && !empty($columnSchema['nullable'])) {
-                return null;
-            }
             if ($relationship) {
+                $parentTable = $relationship['to_table'] ?? null;
+                $parentColumn = $relationship['to_column'] ?? null;
+                $parentValues = [];
+                if ($parentTable && $parentColumn) {
+                    $parentValues = $this->generatedColumnValues[$parentTable][$parentColumn] ?? [];
+                }
+
+                if ($parentValues) {
+                    return $this->faker->randomElement($parentValues);
+                }
+                if (!empty($columnSchema['nullable'])) {
+                    return null;
+                }
                 throw new \RuntimeException("No parent rows available for foreign key {$tableName}.{$columnName}.");
             }
         }
