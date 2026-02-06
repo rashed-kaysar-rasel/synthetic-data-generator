@@ -22,6 +22,53 @@
                     class="w-[150px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
             </div>
         </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-900">Insert Into Database</h2>
+                    <p class="mt-1 text-xs text-slate-600">Provide connection details to insert generated data directly.</p>
+                </div>
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input id="insert-enabled" type="checkbox" class="rounded border-slate-300" />
+                    Enable Insert
+                </label>
+            </div>
+            <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <div>
+                    <label for="insert-db-driver" class="text-sm font-medium text-slate-700">Database Type</label>
+                    <select id="insert-db-driver"
+                        class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900">
+                        <option value="mysql" @selected(($connectionMeta['driver'] ?? '') === 'mysql')>MySQL</option>
+                        <option value="pgsql" @selected(($connectionMeta['driver'] ?? '') === 'pgsql')>PostgreSQL</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="insert-db-host" class="text-sm font-medium text-slate-700">Host</label>
+                    <input id="insert-db-host" type="text" value="{{ $connectionMeta['host'] ?? '' }}"
+                        class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                </div>
+                <div>
+                    <label for="insert-db-port" class="text-sm font-medium text-slate-700">Port</label>
+                    <input id="insert-db-port" type="number" value="{{ $connectionMeta['port'] ?? '' }}"
+                        class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                </div>
+                <div>
+                    <label for="insert-db-database" class="text-sm font-medium text-slate-700">Database Name</label>
+                    <input id="insert-db-database" type="text" value="{{ $connectionMeta['database'] ?? '' }}"
+                        class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                </div>
+                <div>
+                    <label for="insert-db-username" class="text-sm font-medium text-slate-700">Username</label>
+                    <input id="insert-db-username" type="text" value="{{ $connectionMeta['username'] ?? '' }}"
+                        class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                </div>
+                <div>
+                    <label for="insert-db-password" class="text-sm font-medium text-slate-700">Password</label>
+                    <input id="insert-db-password" type="password"
+                        class="mt-2 block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                </div>
+            </div>
+        </div>
 
         @foreach ($schema['tables'] as $table)
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm" data-table-card>

@@ -10,6 +10,7 @@ Route::get('/configure', [SchemaController::class, 'show'])->name('generator.con
 
 // Action Routes
 Route::post('/schema', [SchemaController::class, 'store'])->name('schema.store');
+Route::post('/schema/connect', [SchemaController::class, 'storeFromConnection'])->name('schema.connect');
 Route::post('/generate', [DataGenerationController::class, 'store'])->name('generate.store');
 Route::get('/jobs/{job_id}', [DataGenerationController::class, 'show'])->name('generate.job');
 Route::get('/download/{file_name}', [DataGenerationController::class, 'download'])->name('generate.download');
