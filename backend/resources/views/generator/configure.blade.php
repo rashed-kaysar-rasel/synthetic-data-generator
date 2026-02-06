@@ -24,13 +24,19 @@
         </div>
 
         @foreach ($schema['tables'] as $table)
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-lg border border-slate-200 bg-white shadow-sm" data-table-card>
                 <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
                     <h2 class="text-lg font-semibold text-slate-900">{{ $table['name'] }}</h2>
-                    <div class="flex items-center gap-2 text-sm text-slate-600">
-                        <span>Rows:</span>
-                        <input type="number" min="0" value="1000" data-row-count data-table="{{ $table['name'] }}"
-                            class="w-[120px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                    <div class="flex items-center gap-3 text-sm text-slate-600">
+                        <div class="flex items-center gap-2">
+                            <span>Rows:</span>
+                            <input type="number" min="0" value="1000" data-row-count data-table="{{ $table['name'] }}"
+                                class="w-[120px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                        </div>
+                        <button type="button" data-delete-table="{{ $table['name'] }}"
+                            class="rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50">
+                            Remove
+                        </button>
                     </div>
                 </div>
                 <div class="px-6 py-4">

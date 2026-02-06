@@ -32,6 +32,13 @@ function buildPayload(schema) {
     return payload;
 }
 
+function removeTableFromSchema(schema, tableName) {
+    if (!schema || !Array.isArray(schema.tables)) {
+        return;
+    }
+    schema.tables = schema.tables.filter((table) => table.name !== tableName);
+}
+
 function setJobAlert({ status, message, downloadUrl, showRetry }) {
     const alert = document.getElementById('job-alert');
     const title = document.getElementById('job-title');
@@ -148,6 +155,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!form || !generateButton) {
         return;
     }
+
+    form.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('[data-delete-table]');
+        if (!removeButton) {
+            return;
+        }
+        const tableName = removeButton.getAttribute('data-delete-table');
+        if (!tableName) {
+            return;
+        }
+        const card = removeButton.closest('[data-table-card]');
+        if (card) {
+            card.remove();
+        }
+        removeTableFromSchema(window.generatorSchema, tableName);
+    });
 
     const handleSubmit = async () => {
         setJobAlert({
