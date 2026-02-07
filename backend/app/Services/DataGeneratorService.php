@@ -125,6 +125,52 @@ class DataGeneratorService
     }
 
     /**
+     * Generate data to a SQL file while invoking a callback for each row.
+     *
+     * @param array $generationConfig
+     * @param array $schema
+     * @param string|null $outputFileName
+     * @param array $autoIncrementSeeds
+     * @param callable $rowCallback
+     * @return string
+     */
+    public function generateWithCallback(
+        array $generationConfig,
+        array $schema,
+        ?string $outputFileName,
+        array $autoIncrementSeeds,
+        callable $rowCallback
+    ): string {
+        $this->generationConfig = $generationConfig;
+        $this->schema = $schema;
+        $this->generatedPrimaryKeys = [];
+        $this->generatedColumnValues = [];
+        $this->uniqueValues = [];
+        $this->autoIncrementCounters = $autoIncrementSeeds;
+        $this->uniqueColumnCounters = [];
+        $this->uniqueConstraints = $this->buildUniqueConstraints($schema);
+        $this->referencedColumnsByTable = $this->buildReferencedColumnsMap($schema['relationships'] ?? []);
+
+        $format = $this->generationConfig['format'];
+        if ($format !== 'sql') {
+            throw new \RuntimeException('Direct insert requires SQL format generation.');
+        }
+
+        $fileName = $outputFileName ?: uniqid('data_') . '.sql';
+        if (!str_ends_with($fileName, '.sql')) {
+            $fileName .= '.sql';
+        }
+
+        Storage::disk('public')->makeDirectory('generated_data');
+        $filePath = Storage::disk('public')->path('generated_data/' . $fileName);
+        $file = fopen($filePath, 'w');
+        $this->generateSqlFileWithCallback($file, $rowCallback);
+        fclose($file);
+
+        return $filePath;
+    }
+
+    /**
      * Generate data in SQL format and write to a file.
      *
      * @param resource $file
@@ -134,6 +180,28 @@ class DataGeneratorService
         foreach ($this->getOrderedTableConfigs() as $tableName => $tableConfig) {
             for ($i = 0; $i < $tableConfig['rowCount']; $i++) {
                 $rowData = $this->generateRow($tableName, $tableConfig);
+                $columnKeys = array_keys($rowData);
+                $sanitizedColumns = array_map([$this, 'normalizeIdentifier'], $columnKeys);
+                $sanitizedTableName = $this->normalizeIdentifier($tableName);
+                $columns = '`' . implode('`, `', $sanitizedColumns) . '`';
+                $values = implode(', ', array_map([$this, 'quoteValue'], array_values($rowData)));
+                fwrite($file, "INSERT INTO `{$sanitizedTableName}` ($columns) VALUES ($values);\n");
+            }
+        }
+    }
+
+    /**
+     * Generate data in SQL format and invoke a callback with each row.
+     *
+     * @param resource $file
+     * @param callable $rowCallback
+     */
+    protected function generateSqlFileWithCallback($file, callable $rowCallback): void
+    {
+        foreach ($this->getOrderedTableConfigs() as $tableName => $tableConfig) {
+            for ($i = 0; $i < $tableConfig['rowCount']; $i++) {
+                $rowData = $this->generateRow($tableName, $tableConfig);
+                $rowCallback($tableName, $rowData);
                 $columnKeys = array_keys($rowData);
                 $sanitizedColumns = array_map([$this, 'normalizeIdentifier'], $columnKeys);
                 $sanitizedTableName = $this->normalizeIdentifier($tableName);

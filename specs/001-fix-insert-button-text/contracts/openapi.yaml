@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: Data Generation API
+  version: 1.0.0
+paths:
+  /generate:
+    post:
+      summary: Generate synthetic data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [sql, csv]
+                insert:
+                  type: boolean
+              required: [format]
+      responses:
+        '200':
+          description: Generation started or completed
+        '422':
+          description: Validation error

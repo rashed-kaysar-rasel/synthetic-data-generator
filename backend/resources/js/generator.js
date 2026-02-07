@@ -3,12 +3,27 @@ function buildPayload(schema) {
         format: document.getElementById('format')?.value || 'sql',
         seed: null,
         tables: {},
+        insert: false,
+        connection: null,
     };
 
     const seedInput = document.getElementById('seed');
     if (seedInput && seedInput.value !== '') {
         const parsedSeed = parseInt(seedInput.value, 10);
         payload.seed = Number.isNaN(parsedSeed) ? null : parsedSeed;
+    }
+
+    const insertEnabled = document.getElementById('insert-enabled');
+    if (insertEnabled?.checked) {
+        payload.insert = true;
+        payload.connection = {
+            driver: document.getElementById('insert-db-driver')?.value || 'mysql',
+            host: document.getElementById('insert-db-host')?.value || '',
+            port: document.getElementById('insert-db-port')?.value || null,
+            database: document.getElementById('insert-db-database')?.value || '',
+            username: document.getElementById('insert-db-username')?.value || '',
+            password: document.getElementById('insert-db-password')?.value || '',
+        };
     }
 
     schema.tables.forEach((table) => {
@@ -172,6 +187,11 @@ document.addEventListener('DOMContentLoaded', () => {
         removeTableFromSchema(window.generatorSchema, tableName);
     });
 
+    const resetGenerateButton = () => {
+        generateButton.disabled = false;
+        generateButton.textContent = 'Generate Data';
+    };
+
     const handleSubmit = async () => {
         setJobAlert({
             status: 'pending',
@@ -220,10 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     showRetry: false,
                 });
                 setAlertVariant(result.status);
+                resetGenerateButton();
+                return;
             } else {
+                if (result.status === 'completed') {
+                    resetGenerateButton();
+                    return;
+                }
                 await pollJobStatus(result.job_id, () => {
-                    generateButton.disabled = false;
-                    generateButton.textContent = 'Generate Data';
+                    resetGenerateButton();
                 });
             }
         } catch (error) {
@@ -233,8 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showRetry: true,
             });
             setAlertVariant('failed');
-            generateButton.disabled = false;
-            generateButton.textContent = 'Generate Data';
+            resetGenerateButton();
         }
     };
 

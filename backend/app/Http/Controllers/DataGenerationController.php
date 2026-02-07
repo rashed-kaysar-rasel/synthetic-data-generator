@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Throwable;
 
 class DataGenerationController extends Controller
 {
@@ -48,6 +49,14 @@ class DataGenerationController extends Controller
                     }
                 },
             ],
+            'insert' => 'sometimes|boolean',
+            'connection' => 'nullable|array',
+            'connection.driver' => 'required_if:insert,true|in:mysql,pgsql',
+            'connection.host' => 'required_if:insert,true|string',
+            'connection.port' => 'nullable|integer',
+            'connection.database' => 'required_if:insert,true|string',
+            'connection.username' => 'required_if:insert,true|string',
+            'connection.password' => 'nullable|string',
         ]);
 
         $userId = auth()->id() ?? 1; // Fallback for now
@@ -60,8 +69,81 @@ class DataGenerationController extends Controller
             return Redirect::back()->withErrors($constraintErrors);
         }
 
+        $insertEnabled = !empty($validated['insert']);
+        if ($insertEnabled && $validated['format'] !== 'sql') {
+            $error = ['format' => ['Direct insert requires SQL format.']];
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $error], 422);
+            }
+            return Redirect::back()->withErrors($error);
+        }
+
         $fileToken = (string) Str::uuid();
         $fileName = $fileToken . ($validated['format'] === 'csv' ? '.zip' : '.sql');
+
+        if ($insertEnabled) {
+            try {
+                $connection = $this->buildExternalConnection($validated['connection']);
+                $connection->getPdo();
+
+                $autoIncrementSeeds = $this->buildAutoIncrementSeeds($schema, $connection);
+                $batchSize = 500;
+                $buffers = [];
+                $insertedCounts = [];
+
+                $connection->beginTransaction();
+                $generator = app(\App\Services\DataGeneratorService::class);
+                $generator->generateWithCallback(
+                    $validated,
+                    $schema,
+                    $fileName,
+                    $autoIncrementSeeds,
+                    function ($tableName, $rowData) use (&$buffers, $batchSize, $connection, &$insertedCounts) {
+                        $buffers[$tableName][] = $rowData;
+                        if (count($buffers[$tableName]) >= $batchSize) {
+                            $connection->table($tableName)->insert($buffers[$tableName]);
+                            $insertedCounts[$tableName] = ($insertedCounts[$tableName] ?? 0) + count($buffers[$tableName]);
+                            $buffers[$tableName] = [];
+                        }
+                    }
+                );
+
+                foreach ($buffers as $tableName => $rows) {
+                    if (!$rows) {
+                        continue;
+                    }
+                    $connection->table($tableName)->insert($rows);
+                    $insertedCounts[$tableName] = ($insertedCounts[$tableName] ?? 0) + count($rows);
+                }
+
+                $connection->commit();
+
+                $payload = [
+                    'job_id' => null,
+                    'status' => 'completed',
+                    'download_url' => route('generate.download', ['file_name' => $fileName]),
+                    'inserted' => $insertedCounts,
+                ];
+
+                if ($request->expectsJson()) {
+                    return response()->json($payload);
+                }
+
+                return Redirect::back()->with('job', $payload);
+            } catch (Throwable $exception) {
+                if (isset($connection)) {
+                    try {
+                        $connection->rollBack();
+                    } catch (Throwable $rollbackException) {
+                    }
+                }
+                $error = ['insert' => ['Data insertion failed: ' . $exception->getMessage()]];
+                if ($request->expectsJson()) {
+                    return response()->json(['errors' => $error], 422);
+                }
+                return Redirect::back()->withErrors($error);
+            }
+        }
 
         $job = new GenerateDataJob($validated, $userId, $fileName);
         $jobId = Queue::connection()->push($job);
@@ -148,6 +230,57 @@ class DataGenerationController extends Controller
         }
 
         return response()->download($filePath);
+    }
+
+    private function buildExternalConnection(array $connection): \Illuminate\Database\Connection
+    {
+        $driver = $connection['driver'];
+        $port = $connection['port'] ?? ($driver === 'pgsql' ? 5432 : 3306);
+
+        Config::set('database.connections.external', [
+            'driver' => $driver,
+            'host' => $connection['host'],
+            'port' => $port,
+            'database' => $connection['database'],
+            'username' => $connection['username'],
+            'password' => $connection['password'] ?? '',
+            'charset' => $driver === 'pgsql' ? 'utf8' : 'utf8mb4',
+            'collation' => $driver === 'pgsql' ? null : 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'schema' => $driver === 'pgsql' ? 'public' : null,
+        ]);
+
+        DB::purge('external');
+        return DB::connection('external');
+    }
+
+    private function buildAutoIncrementSeeds(array $schema, \Illuminate\Database\Connection $connection): array
+    {
+        $seeds = [];
+        foreach ($schema['tables'] ?? [] as $table) {
+            $tableName = $table['name'] ?? null;
+            if (!$tableName) {
+                continue;
+            }
+            $autoIncrementColumn = null;
+            foreach ($table['columns'] ?? [] as $column) {
+                if (!empty($column['autoIncrement'])) {
+                    $autoIncrementColumn = $column['name'];
+                    break;
+                }
+            }
+            if (!$autoIncrementColumn) {
+                continue;
+            }
+            try {
+                $max = $connection->table($tableName)->max($autoIncrementColumn);
+                $seeds[$tableName] = is_numeric($max) ? (int) $max : 0;
+            } catch (Throwable $exception) {
+                $seeds[$tableName] = 0;
+            }
+        }
+
+        return $seeds;
     }
 
     private function validateGenerationConstraints(array $schema, array $validated): array
