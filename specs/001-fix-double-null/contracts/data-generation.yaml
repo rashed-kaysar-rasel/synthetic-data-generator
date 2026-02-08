@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Synthetic Data Generation
+  version: 1.0.0
+paths:
+  /data-generation:
+    post:
+      summary: Start data generation job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schema:
+                  type: object
+                generationConfig:
+                  type: object
+              required: [schema, generationConfig]
+      responses:
+        '200':
+          description: Job accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: integer
+                  status:
+                    type: string

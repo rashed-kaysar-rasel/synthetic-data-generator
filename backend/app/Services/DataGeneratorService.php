@@ -380,6 +380,15 @@ class DataGeneratorService
         if (str_contains($dataType, 'int')) {
             return $this->faker->randomNumber();
         }
+        if (
+            str_contains($dataType, 'double')
+            || str_contains($dataType, 'float')
+            || str_contains($dataType, 'decimal')
+            || str_contains($dataType, 'numeric')
+            || str_contains($dataType, 'real')
+        ) {
+            return $this->faker->randomFloat(4, 0, 10000);
+        }
         if (str_contains($dataType, 'string') || str_contains($dataType, 'char') || str_contains($dataType, 'text')) {
             return $this->faker->word;
         }
@@ -405,6 +414,9 @@ class DataGeneratorService
     {
         if (is_null($value)) {
             return 'NULL';
+        }
+        if ($value instanceof \DateTimeInterface) {
+            return "'" . addslashes($value->format('Y-m-d H:i:s')) . "'";
         }
         if (is_string($value)) {
             return "'" . addslashes($value) . "'";
@@ -497,11 +509,12 @@ class DataGeneratorService
         }
 
         if ($providerKey) {
-            return $this->generateValueFromProvider($providerKey);
+            $value = $this->generateValueFromProvider($providerKey);
+            return $this->normalizeGeneratedValue($value, $columnSchema);
         }
 
         if (array_key_exists('defaultValue', $columnSchema) && $columnSchema['defaultValue'] !== null) {
-            return $columnSchema['defaultValue'];
+            return $this->normalizeGeneratedValue($columnSchema['defaultValue'], $columnSchema);
         }
 
         return $this->getDefaultValueForType($columnSchema['dataType']);
@@ -510,9 +523,40 @@ class DataGeneratorService
     protected function generateUniqueColumnValue(string $tableName, array $columnSchema, ?string $providerKey)
     {
         if ($providerKey) {
-            return $this->generateUniqueProviderValue($providerKey);
+            return $this->generateUniqueProviderValue($tableName, $columnSchema, $providerKey);
         }
 
+        return $this->buildUniqueFallbackValue($tableName, $columnSchema);
+    }
+
+    protected function generateUniqueProviderValue(string $tableName, array $columnSchema, string $providerKey)
+    {
+        [$group, $provider] = explode('.', $providerKey);
+        $columnName = $columnSchema['name'];
+        $uniqueKey = '__column__' . $columnName;
+        if (!isset($this->uniqueValues[$tableName][$uniqueKey])) {
+            $this->uniqueValues[$tableName][$uniqueKey] = [];
+        }
+
+        $attempts = 0;
+        $maxAttempts = 200;
+        while ($attempts++ < $maxAttempts) {
+            $value = $this->faker->{$provider};
+            $value = $this->normalizeGeneratedValue($value, $columnSchema);
+            $valueKey = (string) $value;
+            if (!isset($this->uniqueValues[$tableName][$uniqueKey][$valueKey])) {
+                $this->uniqueValues[$tableName][$uniqueKey][$valueKey] = true;
+                return $value;
+            }
+        }
+
+        $fallback = $this->buildUniqueFallbackValue($tableName, $columnSchema);
+        $this->uniqueValues[$tableName][$uniqueKey][(string) $fallback] = true;
+        return $fallback;
+    }
+
+    protected function buildUniqueFallbackValue(string $tableName, array $columnSchema)
+    {
         $columnName = $columnSchema['name'];
         $dataType = strtolower($columnSchema['dataType'] ?? '');
         $counterKey = $tableName . '.' . $columnName;
@@ -521,6 +565,15 @@ class DataGeneratorService
 
         if (str_contains($dataType, 'int')) {
             return $counter;
+        }
+        if (
+            str_contains($dataType, 'double')
+            || str_contains($dataType, 'float')
+            || str_contains($dataType, 'decimal')
+            || str_contains($dataType, 'numeric')
+            || str_contains($dataType, 'real')
+        ) {
+            return $counter + ($counter / 10000);
         }
 
         if (str_contains($dataType, 'date')) {
@@ -534,11 +587,32 @@ class DataGeneratorService
         return $columnName . '_' . uniqid((string) $counter, true);
     }
 
-    protected function generateUniqueProviderValue(string $providerKey)
+    protected function normalizeGeneratedValue($value, array $columnSchema)
     {
-        [$group, $provider] = explode('.', $providerKey);
-        $uniqueFaker = $this->faker->unique();
-        return $uniqueFaker->{$provider};
+        if ($value instanceof \DateTimeInterface) {
+            return $this->formatDateTimeForColumn($value, $columnSchema['dataType'] ?? '');
+        }
+
+        return $value;
+    }
+
+    protected function formatDateTimeForColumn(\DateTimeInterface $value, string $dataType): string
+    {
+        $dataType = strtolower($dataType);
+        if (str_contains($dataType, 'datetime') || str_contains($dataType, 'timestamp')) {
+            return $value->format('Y-m-d H:i:s');
+        }
+        if (str_contains($dataType, 'date') && str_contains($dataType, 'time')) {
+            return $value->format('Y-m-d H:i:s');
+        }
+        if (str_contains($dataType, 'date')) {
+            return $value->format('Y-m-d');
+        }
+        if (str_contains($dataType, 'time')) {
+            return $value->format('H:i:s');
+        }
+
+        return $value->format('Y-m-d H:i:s');
     }
 
     protected function ensureUniqueConstraints(string $tableName, array $tableConfig, $tableSchema, array &$rowData): void
