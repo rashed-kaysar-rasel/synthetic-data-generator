@@ -49,6 +49,8 @@ class DataGenerationController extends Controller
                     }
                 },
             ],
+            'tables.*.columns.*.enumValues' => ['nullable', 'array'],
+            'tables.*.columns.*.enumValues.*' => ['nullable', 'string'],
             'insert' => 'sometimes|boolean',
             'connection' => 'nullable|array',
             'connection.driver' => 'required_if:insert,true|in:mysql,pgsql',
@@ -67,6 +69,14 @@ class DataGenerationController extends Controller
                 return response()->json(['errors' => $constraintErrors], 422);
             }
             return Redirect::back()->withErrors($constraintErrors);
+        }
+
+        $enumErrors = $this->validateEnumValues($validated);
+        if (!empty($enumErrors)) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $enumErrors], 422);
+            }
+            return Redirect::back()->withErrors($enumErrors);
         }
 
         $insertEnabled = !empty($validated['insert']);
@@ -350,6 +360,37 @@ class DataGenerationController extends Controller
                 $parentRowCount = (int) ($parentConfig['rowCount'] ?? 0);
                 if ($parentRowCount > 0 && $rowCount > $parentRowCount) {
                     $errors["tables.{$tableName}.rowCount"] = "Table {$tableName} exceeds unique FK capacity for {$columnName} (parent {$parentTable} has {$parentRowCount} rows).";
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    private function validateEnumValues(array $validated): array
+    {
+        $errors = [];
+        $tables = $validated['tables'] ?? [];
+
+        foreach ($tables as $tableName => $tableConfig) {
+            $columns = $tableConfig['columns'] ?? [];
+            foreach ($columns as $columnName => $columnConfig) {
+                $provider = $columnConfig['provider'] ?? null;
+                if ($provider !== 'text.enum') {
+                    continue;
+                }
+                $rawValues = $columnConfig['enumValues'] ?? [];
+                if (!is_array($rawValues)) {
+                    $rawValues = [];
+                }
+                $values = array_filter(array_map(function ($value) {
+                    return trim((string) $value);
+                }, $rawValues), function ($value) {
+                    return $value !== '';
+                });
+                if (count($values) === 0) {
+                    $errors["tables.{$tableName}.columns.{$columnName}.enumValues"] =
+                        "Enum values are required for {$tableName}.{$columnName}.";
                 }
             }
         }

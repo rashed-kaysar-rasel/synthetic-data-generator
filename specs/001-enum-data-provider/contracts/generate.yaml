@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  title: Synthetic Data Generator - Generation API
+  version: 1.0.0
+paths:
+  /generate:
+    post:
+      summary: Start data generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format, tables]
+              properties:
+                format:
+                  type: string
+                  enum: [sql, csv]
+                seed:
+                  type: integer
+                  nullable: true
+                insert:
+                  type: boolean
+                connection:
+                  type: object
+                  nullable: true
+                  properties:
+                    driver:
+                      type: string
+                      enum: [mysql, pgsql]
+                    host:
+                      type: string
+                    port:
+                      type: integer
+                      nullable: true
+                    database:
+                      type: string
+                    username:
+                      type: string
+                    password:
+                      type: string
+                      nullable: true
+                tables:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    required: [rowCount, columns]
+                    properties:
+                      rowCount:
+                        type: integer
+                        minimum: 0
+                      columns:
+                        type: object
+                        additionalProperties:
+                          type: object
+                          properties:
+                            provider:
+                              type: string
+                              nullable: true
+                              description: Data provider key (e.g., text.enum)
+                            enumValues:
+                              type: array
+                              items:
+                                type: string
+                              nullable: true
+                              description: Required when provider is text.enum
+      responses:
+        '200':
+          description: Job accepted or completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                    enum: [pending, completed]
+                  download_url:
+                    type: string
+                    nullable: true
+                  inserted:
+                    type: object
+                    additionalProperties:
+                      type: integer
+        '422':
+          description: Validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string

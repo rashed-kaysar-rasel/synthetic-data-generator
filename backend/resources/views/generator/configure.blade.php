@@ -122,19 +122,34 @@
                                             @endif
                                         </td>
                                         <td class="px-3 py-2 text-right">
-                                            <select data-provider data-table="{{ $table['name'] }}"
-                                                data-column="{{ $column['name'] }}"
-                                                class="w-full min-w-[200px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900">
-                                                <option value="">Default</option>
-                                                @foreach ($dataProviders as $group => $providers)
-                                                    <optgroup label="{{ ucfirst($group) }}">
-                                                        @foreach ($providers as $provider)
-                                                            <option value="{{ $group }}.{{ $provider }}">
-                                                                {{ $provider }}</option>
-                                                        @endforeach
-                                                    </optgroup>
-                                                @endforeach
-                                            </select>
+                                            <div class="space-y-2">
+                                                <select data-provider data-table="{{ $table['name'] }}"
+                                                    data-column="{{ $column['name'] }}"
+                                                    class="w-full min-w-[200px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900">
+                                                    <option value="">Default</option>
+                                                    @foreach ($dataProviders as $group => $providers)
+                                                        <optgroup label="{{ ucfirst($group) }}">
+                                                            @foreach ($providers as $provider)
+                                                                <option value="{{ $group }}.{{ $provider }}">
+                                                                    {{ $provider }}</option>
+                                                            @endforeach
+                                                        </optgroup>
+                                                    @endforeach
+                                                </select>
+                                                <div data-enum-values-container class="hidden">
+                                                    <label class="sr-only"
+                                                        for="enum-values-{{ $table['name'] }}-{{ $column['name'] }}">
+                                                        Enum values
+                                                    </label>
+                                                    <textarea data-enum-values data-table="{{ $table['name'] }}"
+                                                        data-column="{{ $column['name'] }}"
+                                                        id="enum-values-{{ $table['name'] }}-{{ $column['name'] }}"
+                                                        rows="2"
+                                                        placeholder="Enter values separated by commas or new lines"
+                                                        class="w-full min-w-[200px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"></textarea>
+                                                    <p class="text-xs text-slate-500">Enter allowed values (comma or newline separated).</p>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
