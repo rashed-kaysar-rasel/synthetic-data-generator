@@ -39,6 +39,7 @@ return [
             'sentence',
             'paragraph',
             'slug',
+            'enum',
         ],
     ],
 ];

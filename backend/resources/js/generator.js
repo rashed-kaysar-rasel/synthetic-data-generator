@@ -38,6 +38,16 @@ function buildPayload(schema) {
             const providerSelect = document.querySelector(
                 `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
             );
+            const enumValuesInput = document.querySelector(
+                `[data-enum-values][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            const enumValues = enumValuesInput
+                ? parseEnumValues(enumValuesInput.value)
+                : null;
+            payload.tables[table.name].columns[column.name] = {
+                provider: providerSelect ? providerSelect.value : '',
+                enumValues: enumValues && enumValues.length > 0 ? enumValues : null,
+            };
             const slugSourceSelect = document.querySelector(
                 `[data-slug-source][data-table="${table.name}"][data-column="${column.name}"]`
             );
@@ -51,6 +61,63 @@ function buildPayload(schema) {
     return payload;
 }
 
+function parseEnumValues(raw) {
+    if (!raw) {
+        return [];
+    }
+    const parts = raw.split(/[\n,]+/);
+    const unique = new Set();
+    parts.forEach((value) => {
+        const trimmed = value.trim();
+        if (trimmed !== '') {
+            unique.add(trimmed);
+        }
+    });
+    return Array.from(unique);
+}
+
+function updateEnumValuesVisibility(tableName, columnName) {
+    const providerSelect = document.querySelector(
+        `[data-provider][data-table="${tableName}"][data-column="${columnName}"]`
+    );
+    const enumInput = document.querySelector(
+        `[data-enum-values][data-table="${tableName}"][data-column="${columnName}"]`
+    );
+    const container = enumInput?.closest('[data-enum-values-container]');
+    if (!providerSelect || !enumInput || !container) {
+        return;
+    }
+
+    if (providerSelect.value === 'text.enum') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        enumInput.value = '';
+    }
+}
+
+function validateEnumSelections(schema) {
+    const errors = [];
+    schema.tables.forEach((table) => {
+        table.columns.forEach((column) => {
+            const providerSelect = document.querySelector(
+                `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (!providerSelect || providerSelect.value !== 'text.enum') {
+                return;
+            }
+            const enumInput = document.querySelector(
+                `[data-enum-values][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            const values = enumInput ? parseEnumValues(enumInput.value) : [];
+            if (values.length === 0) {
+                errors.push(`Enter enum values for ${table.name}.${column.name}.`);
+            }
+        });
+    });
+
+    return errors;
+}
 function isTextLikeDataType(dataType) {
     if (!dataType) {
         return false;
@@ -289,13 +356,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.generatorSchema.tables.forEach((table) => {
         table.columns.forEach((column) => {
+            updateEnumValuesVisibility(table.name, column.name);
             populateSlugSourceSelect(window.generatorSchema, table.name, column.name);
             updateSlugSourceVisibility(table.name, column.name);
             const providerSelect = document.querySelector(
                 `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
             );
             if (providerSelect) {
-                providerSelect.addEventListener('change', () => {
+                providerSelect.addEventListener('change', () => {          
+                    updateEnumValuesVisibility(table.name, column.name);
                     updateSlugSourceVisibility(table.name, column.name);
                 });
             }
@@ -308,6 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleSubmit = async () => {
+        const enumErrors = validateEnumSelections(window.generatorSchema);
+        if (enumErrors.length > 0) {
+            setJobAlert({
+                status: 'failed',
+                message: enumErrors.join(' '),
         const slugErrors = validateSlugSelections(window.generatorSchema);
         if (slugErrors.length > 0) {
             setJobAlert({

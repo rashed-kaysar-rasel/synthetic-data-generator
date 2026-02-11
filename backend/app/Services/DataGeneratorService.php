@@ -479,6 +479,7 @@ class DataGeneratorService
     {
         $columnName = $columnSchema['name'];
         $providerKey = $tableConfig['columns'][$columnName]['provider'] ?? null;
+        $enumValues = $tableConfig['columns'][$columnName]['enumValues'] ?? null;
         $slugSourceColumn = $tableConfig['columns'][$columnName]['slugSourceColumn'] ?? null;
 
         if (!empty($columnSchema['autoIncrement'])) {
@@ -514,10 +515,13 @@ class DataGeneratorService
         }
 
         if (!empty($columnSchema['isUnique']) || !empty($columnSchema['isPrimaryKey'])) {
-            return $this->generateUniqueColumnValue($tableName, $columnSchema, $providerKey);
+            return $this->generateUniqueColumnValue($tableName, $tableConfig, $columnSchema, $providerKey);
         }
 
         if ($providerKey) {
+            if ($this->isEnumProvider($providerKey)) {
+                return $this->generateEnumValue($enumValues);
+            }
             $value = $this->generateValueFromProvider($providerKey);
             return $this->normalizeGeneratedValue($value, $columnSchema);
         }
@@ -529,22 +533,39 @@ class DataGeneratorService
         return $this->getDefaultValueForType($columnSchema['dataType']);
     }
 
-    protected function generateUniqueColumnValue(string $tableName, array $columnSchema, ?string $providerKey)
+    protected function generateUniqueColumnValue(string $tableName, array $tableConfig, array $columnSchema, ?string $providerKey)
     {
         if ($providerKey) {
-            return $this->generateUniqueProviderValue($tableName, $columnSchema, $providerKey);
+            return $this->generateUniqueProviderValue($tableName, $tableConfig, $columnSchema, $providerKey);
         }
 
         return $this->buildUniqueFallbackValue($tableName, $columnSchema);
     }
 
-    protected function generateUniqueProviderValue(string $tableName, array $columnSchema, string $providerKey)
+    protected function generateUniqueProviderValue(string $tableName, array $tableConfig, array $columnSchema, string $providerKey)
     {
         [$group, $provider] = explode('.', $providerKey);
         $columnName = $columnSchema['name'];
         $uniqueKey = '__column__' . $columnName;
         if (!isset($this->uniqueValues[$tableName][$uniqueKey])) {
             $this->uniqueValues[$tableName][$uniqueKey] = [];
+        }
+
+        if ($this->isEnumProvider($providerKey)) {
+            $enumValues = $this->normalizeEnumValues($tableConfig['columns'][$columnName]['enumValues'] ?? []);
+            if (!$enumValues) {
+                return '';
+            }
+            foreach ($enumValues as $value) {
+                $valueKey = (string) $value;
+                if (!isset($this->uniqueValues[$tableName][$uniqueKey][$valueKey])) {
+                    $this->uniqueValues[$tableName][$uniqueKey][$valueKey] = true;
+                    return $value;
+                }
+            }
+            $fallback = $enumValues[array_rand($enumValues)];
+            $this->uniqueValues[$tableName][$uniqueKey][(string) $fallback] = true;
+            return $fallback;
         }
 
         $attempts = 0;
@@ -690,7 +711,35 @@ class DataGeneratorService
         }
         return implode('|', $parts);
     }
+    protected function isEnumProvider(?string $providerKey): bool
+    {
+        return $providerKey === 'text.enum';
+    }
 
+    protected function generateEnumValue($enumValues): string
+    {
+        $values = $this->normalizeEnumValues($enumValues);
+        if (!$values) {
+            return '';
+        }
+        return (string) $values[array_rand($values)];
+    }
+
+    protected function normalizeEnumValues($enumValues): array
+    {
+        if (!is_array($enumValues)) {
+            return [];
+        }
+        $unique = [];
+        foreach ($enumValues as $value) {
+            $trimmed = trim((string) $value);
+            if ($trimmed === '') {
+                continue;
+            }
+            $unique[$trimmed] = true;
+        }
+        return array_keys($unique);
+    }
     protected function isSlugProvider(string $providerKey): bool
     {
         return $providerKey === 'text.slug';
