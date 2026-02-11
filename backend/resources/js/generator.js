@@ -38,13 +38,113 @@ function buildPayload(schema) {
             const providerSelect = document.querySelector(
                 `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
             );
+            const slugSourceSelect = document.querySelector(
+                `[data-slug-source][data-table="${table.name}"][data-column="${column.name}"]`
+            );
             payload.tables[table.name].columns[column.name] = {
                 provider: providerSelect ? providerSelect.value : '',
+                slugSourceColumn: slugSourceSelect && slugSourceSelect.value !== '' ? slugSourceSelect.value : null,
             };
         });
     });
 
     return payload;
+}
+
+function isTextLikeDataType(dataType) {
+    if (!dataType) {
+        return false;
+    }
+    const normalized = dataType.toLowerCase();
+    return (
+        normalized.includes('char')
+        || normalized.includes('text')
+        || normalized.includes('uuid')
+        || normalized.includes('citext')
+    );
+}
+
+function getTableSchema(schema, tableName) {
+    return schema.tables.find((table) => table.name === tableName);
+}
+
+function populateSlugSourceSelect(schema, tableName, columnName) {
+    const slugSelect = document.querySelector(
+        `[data-slug-source][data-table="${tableName}"][data-column="${columnName}"]`
+    );
+    if (!slugSelect) {
+        return;
+    }
+    const tableSchema = getTableSchema(schema, tableName);
+    if (!tableSchema) {
+        return;
+    }
+
+    const options = tableSchema.columns
+        .filter((column) => column.name !== columnName && isTextLikeDataType(column.dataType))
+        .map((column) => ({
+            value: column.name,
+            label: column.name,
+        }));
+
+    slugSelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = options.length > 0 ? 'Select source column' : 'No text columns available';
+    slugSelect.appendChild(placeholder);
+
+    options.forEach((option) => {
+        const optionEl = document.createElement('option');
+        optionEl.value = option.value;
+        optionEl.textContent = option.label;
+        slugSelect.appendChild(optionEl);
+    });
+
+    slugSelect.disabled = options.length === 0;
+}
+
+function updateSlugSourceVisibility(tableName, columnName) {
+    const providerSelect = document.querySelector(
+        `[data-provider][data-table="${tableName}"][data-column="${columnName}"]`
+    );
+    const slugSelect = document.querySelector(
+        `[data-slug-source][data-table="${tableName}"][data-column="${columnName}"]`
+    );
+    const container = slugSelect?.closest('[data-slug-source-container]');
+    if (!providerSelect || !slugSelect || !container) {
+        return;
+    }
+
+    if (providerSelect.value === 'text.slug') {
+        container.classList.remove('hidden');
+        slugSelect.disabled = slugSelect.options.length <= 1;
+    } else {
+        container.classList.add('hidden');
+        slugSelect.value = '';
+        slugSelect.disabled = true;
+    }
+}
+
+function validateSlugSelections(schema) {
+    const errors = [];
+    schema.tables.forEach((table) => {
+        table.columns.forEach((column) => {
+            const providerSelect = document.querySelector(
+                `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (!providerSelect || providerSelect.value !== 'text.slug') {
+                return;
+            }
+            const slugSelect = document.querySelector(
+                `[data-slug-source][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (!slugSelect || slugSelect.value === '') {
+                errors.push(`Select a slug source column for ${table.name}.${column.name}.`);
+            }
+        });
+    });
+
+    return errors;
 }
 
 function removeTableFromSchema(schema, tableName) {
@@ -187,12 +287,37 @@ document.addEventListener('DOMContentLoaded', () => {
         removeTableFromSchema(window.generatorSchema, tableName);
     });
 
+    window.generatorSchema.tables.forEach((table) => {
+        table.columns.forEach((column) => {
+            populateSlugSourceSelect(window.generatorSchema, table.name, column.name);
+            updateSlugSourceVisibility(table.name, column.name);
+            const providerSelect = document.querySelector(
+                `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (providerSelect) {
+                providerSelect.addEventListener('change', () => {
+                    updateSlugSourceVisibility(table.name, column.name);
+                });
+            }
+        });
+    });
+
     const resetGenerateButton = () => {
         generateButton.disabled = false;
         generateButton.textContent = 'Generate Data';
     };
 
     const handleSubmit = async () => {
+        const slugErrors = validateSlugSelections(window.generatorSchema);
+        if (slugErrors.length > 0) {
+            setJobAlert({
+                status: 'failed',
+                message: slugErrors.join(' '),
+                showRetry: false,
+            });
+            setAlertVariant('failed');
+            return;
+        }
         setJobAlert({
             status: 'pending',
             message: 'Starting data generation...',
