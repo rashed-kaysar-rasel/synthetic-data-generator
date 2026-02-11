@@ -44,15 +44,12 @@ function buildPayload(schema) {
             const enumValues = enumValuesInput
                 ? parseEnumValues(enumValuesInput.value)
                 : null;
-            payload.tables[table.name].columns[column.name] = {
-                provider: providerSelect ? providerSelect.value : '',
-                enumValues: enumValues && enumValues.length > 0 ? enumValues : null,
-            };
             const slugSourceSelect = document.querySelector(
                 `[data-slug-source][data-table="${table.name}"][data-column="${column.name}"]`
             );
             payload.tables[table.name].columns[column.name] = {
                 provider: providerSelect ? providerSelect.value : '',
+                enumValues: enumValues && enumValues.length > 0 ? enumValues : null,
                 slugSourceColumn: slugSourceSelect && slugSourceSelect.value !== '' ? slugSourceSelect.value : null,
             };
         });
@@ -382,6 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setJobAlert({
                 status: 'failed',
                 message: enumErrors.join(' '),
+                showRetry: false,
+            });
+            setAlertVariant('failed');
+            return;
+        }
         const slugErrors = validateSlugSelections(window.generatorSchema);
         if (slugErrors.length > 0) {
             setJobAlert({
