@@ -279,10 +279,14 @@ class DataGeneratorService
 
         foreach ($tableSchema['columns'] as $columnSchema) {
             $columnName = $columnSchema['name'];
+            if (array_key_exists($columnName, $rowData)) {
+                continue;
+            }
             $rowData[$columnName] = $this->generateColumnValue(
                 $tableName,
                 $tableConfig,
-                $columnSchema
+                $columnSchema,
+                $rowData
             );
         }
 
@@ -365,7 +369,7 @@ class DataGeneratorService
     protected function generateValueFromProvider(string $providerKey)
     {
         [$group, $provider] = explode('.', $providerKey);
-        return $this->faker->{$provider};
+        return $this->resolveProviderValue($group, $provider);
     }
 
     /**
@@ -471,10 +475,11 @@ class DataGeneratorService
         return $constraintsByTable;
     }
 
-    protected function generateColumnValue(string $tableName, array $tableConfig, array $columnSchema)
+    protected function generateColumnValue(string $tableName, array $tableConfig, array $columnSchema, array &$rowData)
     {
         $columnName = $columnSchema['name'];
         $providerKey = $tableConfig['columns'][$columnName]['provider'] ?? null;
+        $slugSourceColumn = $tableConfig['columns'][$columnName]['slugSourceColumn'] ?? null;
 
         if (!empty($columnSchema['autoIncrement'])) {
             $this->autoIncrementCounters[$tableName] = ($this->autoIncrementCounters[$tableName] ?? 0) + 1;
@@ -502,6 +507,10 @@ class DataGeneratorService
                 }
                 throw new \RuntimeException("No parent rows available for foreign key {$tableName}.{$columnName}.");
             }
+        }
+
+        if ($providerKey && $this->isSlugProvider($providerKey)) {
+            return $this->generateSlugValue($tableName, $tableConfig, $columnSchema, $slugSourceColumn, $rowData);
         }
 
         if (!empty($columnSchema['isUnique']) || !empty($columnSchema['isPrimaryKey'])) {
@@ -541,13 +550,24 @@ class DataGeneratorService
         $attempts = 0;
         $maxAttempts = 200;
         while ($attempts++ < $maxAttempts) {
-            $value = $this->faker->{$provider};
+            $value = $this->resolveProviderValue($group, $provider);
             $value = $this->normalizeGeneratedValue($value, $columnSchema);
             $valueKey = (string) $value;
             if (!isset($this->uniqueValues[$tableName][$uniqueKey][$valueKey])) {
                 $this->uniqueValues[$tableName][$uniqueKey][$valueKey] = true;
                 return $value;
             }
+        }
+
+        if ($provider === 'title') {
+            $counterKey = $tableName . '.' . $columnName . '.title';
+            $this->uniqueColumnCounters[$counterKey] = ($this->uniqueColumnCounters[$counterKey] ?? 0) + 1;
+            $suffix = $this->uniqueColumnCounters[$counterKey];
+            $base = $this->resolveProviderValue($group, $provider);
+            $base = is_string($base) ? $this->formatTitleValue($base) : (string) $base;
+            $fallback = trim($base . ' ' . $suffix);
+            $this->uniqueValues[$tableName][$uniqueKey][(string) $fallback] = true;
+            return $fallback;
         }
 
         $fallback = $this->buildUniqueFallbackValue($tableName, $columnSchema);
@@ -596,6 +616,23 @@ class DataGeneratorService
         return $value;
     }
 
+    protected function resolveProviderValue(string $group, string $provider)
+    {
+        if ($provider === 'title') {
+            $value = $this->faker->words(3, true);
+            return $this->formatTitleValue($value);
+        }
+
+        return $this->faker->{$provider};
+    }
+
+    protected function formatTitleValue(string $value): string
+    {
+        $value = trim(str_replace('_', ' ', $value));
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+        return ucwords(strtolower($value));
+    }
+
     protected function formatDateTimeForColumn(\DateTimeInterface $value, string $dataType): string
     {
         $dataType = strtolower($dataType);
@@ -636,7 +673,7 @@ class DataGeneratorService
                     if (!$columnSchema) {
                         continue;
                     }
-                    $rowData[$columnName] = $this->generateColumnValue($tableName, $tableConfig, $columnSchema);
+                    $rowData[$columnName] = $this->generateColumnValue($tableName, $tableConfig, $columnSchema, $rowData);
                 }
                 $valueKey = $this->buildConstraintValueKey($columns, $rowData);
             }
@@ -652,5 +689,64 @@ class DataGeneratorService
             $parts[] = (string) ($rowData[$column] ?? '');
         }
         return implode('|', $parts);
+    }
+
+    protected function isSlugProvider(string $providerKey): bool
+    {
+        return $providerKey === 'text.slug';
+    }
+
+    protected function generateSlugValue(
+        string $tableName,
+        array $tableConfig,
+        array $columnSchema,
+        ?string $slugSourceColumn,
+        array &$rowData
+    ): string {
+        $columnName = $columnSchema['name'];
+        if (!$slugSourceColumn || $slugSourceColumn === $columnName) {
+            return '';
+        }
+
+        if (!array_key_exists($slugSourceColumn, $rowData)) {
+            $sourceSchema = $this->getColumnSchema($tableName, $slugSourceColumn);
+            if ($sourceSchema) {
+                $rowData[$slugSourceColumn] = $this->generateColumnValue(
+                    $tableName,
+                    $tableConfig,
+                    $sourceSchema,
+                    $rowData
+                );
+            }
+        }
+
+        $sourceValue = $rowData[$slugSourceColumn] ?? null;
+        if ($sourceValue === null || $sourceValue === '') {
+            return '';
+        }
+
+        return $this->slugify((string) $sourceValue);
+    }
+
+    protected function slugify(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if ($value === '') {
+            return '';
+        }
+        $value = preg_replace('/\s+/u', '-', $value);
+        $value = preg_replace('/[^a-z0-9-]+/', '', $value);
+        $value = preg_replace('/-+/', '-', $value);
+        return $value;
+    }
+
+    protected function getColumnSchema(string $tableName, string $columnName): ?array
+    {
+        $tableSchema = collect($this->schema['tables'] ?? [])->firstWhere('name', $tableName);
+        if (!$tableSchema) {
+            return null;
+        }
+
+        return collect($tableSchema['columns'] ?? [])->firstWhere('name', $columnName);
     }
 }

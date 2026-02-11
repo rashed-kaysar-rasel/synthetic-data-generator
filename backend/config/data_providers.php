@@ -38,6 +38,7 @@ return [
             'word',
             'sentence',
             'paragraph',
+            'slug',
         ],
     ],
 ];
