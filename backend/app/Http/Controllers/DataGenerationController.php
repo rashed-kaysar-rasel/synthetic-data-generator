@@ -65,7 +65,7 @@ class DataGenerationController extends Controller
             'connection.password' => 'nullable|string',
         ]);
 
-        $userId = auth()->id() ?? 1; // Fallback for now
+        $userId = auth()->id() ?? 1; // Guest users still allowed
 
         $slugErrors = $this->validateSlugSourceColumns($schema, $validated);
         if (!empty($slugErrors)) {

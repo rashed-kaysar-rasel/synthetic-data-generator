@@ -32,11 +32,10 @@ tests/
 PHP 8.3+, Node.js 22.x: Follow standard conventions
 
 ## Recent Changes
+- 001-auth-module: Added PHP 8.3, Node.js 22, Laravel 12 + Laravel 12, Faker (Laravel), Tailwind CSS, Vite
 
 - 001-enum-data-provider: Added PHP 8.3, Node.js 22, Laravel 12 + Laravel 12, Faker (Laravel), Tailwind CSS, Vite
 - 001-slug-data-provider: Added PHP 8.3, Node.js 22, Laravel 12 + Laravel 12, Faker (Laravel), greenlion/php-sql-parser, Tailwind CSS, Vite
-- 001-fix-double-null: Added PHP 8.3, Node.js 22, Laravel 12 + Laravel framework, Faker (via Laravel), Tailwind CSS, Vite
-- 001-fix-insert-button-text: Added PHP 8.3, Node.js 22, Laravel 12, vanilla JavaScript + Laravel, Tailwind CSS, Vite
 
 
 <!-- MANUAL ADDITIONS START -->
