@@ -51,6 +51,10 @@ class DataGenerationController extends Controller
             ],
             'tables.*.columns.*.enumValues' => ['nullable', 'array'],
             'tables.*.columns.*.enumValues.*' => ['nullable', 'string'],
+            'tables.*.columns.*.slugSourceColumn' => [
+                'nullable',
+                'string',
+            ],
             'insert' => 'sometimes|boolean',
             'connection' => 'nullable|array',
             'connection.driver' => 'required_if:insert,true|in:mysql,pgsql',
@@ -62,6 +66,14 @@ class DataGenerationController extends Controller
         ]);
 
         $userId = auth()->id() ?? 1; // Fallback for now
+
+        $slugErrors = $this->validateSlugSourceColumns($schema, $validated);
+        if (!empty($slugErrors)) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $slugErrors], 422);
+            }
+            return Redirect::back()->withErrors($slugErrors);
+        }
 
         $constraintErrors = $this->validateGenerationConstraints($schema, $validated);
         if (!empty($constraintErrors)) {
@@ -396,5 +408,64 @@ class DataGenerationController extends Controller
         }
 
         return $errors;
+    }
+
+    private function validateSlugSourceColumns(array $schema, array $validated): array
+    {
+        $errors = [];
+        $tableConfigs = $validated['tables'] ?? [];
+        $schemaTables = collect($schema['tables'] ?? [])->keyBy('name');
+
+        foreach ($tableConfigs as $tableName => $tableConfig) {
+            $tableSchema = $schemaTables->get($tableName);
+            if (!$tableSchema) {
+                continue;
+            }
+            $schemaColumns = collect($tableSchema['columns'] ?? [])->keyBy('name');
+            $columnConfigs = $tableConfig['columns'] ?? [];
+
+            foreach ($columnConfigs as $columnName => $columnConfig) {
+                $provider = $columnConfig['provider'] ?? null;
+                if ($provider !== 'text.slug') {
+                    continue;
+                }
+
+                $sourceColumn = $columnConfig['slugSourceColumn'] ?? null;
+                if (!$sourceColumn) {
+                    $errors["tables.{$tableName}.columns.{$columnName}.slugSourceColumn"] =
+                        "Slug source column is required for {$tableName}.{$columnName}.";
+                    continue;
+                }
+
+                if ($sourceColumn === $columnName) {
+                    $errors["tables.{$tableName}.columns.{$columnName}.slugSourceColumn"] =
+                        "Slug source column must be different from {$tableName}.{$columnName}.";
+                    continue;
+                }
+
+                $sourceSchema = $schemaColumns->get($sourceColumn);
+                if (!$sourceSchema) {
+                    $errors["tables.{$tableName}.columns.{$columnName}.slugSourceColumn"] =
+                        "Slug source column {$sourceColumn} does not exist for {$tableName}.";
+                    continue;
+                }
+
+                if (!$this->isTextLikeDataType($sourceSchema['dataType'] ?? '')) {
+                    $errors["tables.{$tableName}.columns.{$columnName}.slugSourceColumn"] =
+                        "Slug source column {$sourceColumn} must be a text column for {$tableName}.";
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    private function isTextLikeDataType(string $dataType): bool
+    {
+        $dataType = strtolower($dataType);
+        return str_contains($dataType, 'char')
+            || str_contains($dataType, 'text')
+            || str_contains($dataType, 'uuid')
+            || str_contains($dataType, 'citext');
     }
 }

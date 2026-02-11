@@ -148,6 +148,18 @@
                                                         placeholder="Enter values separated by commas or new lines"
                                                         class="w-full min-w-[200px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"></textarea>
                                                     <p class="text-xs text-slate-500">Enter allowed values (comma or newline separated).</p>
+                                                <div data-slug-source-container class="hidden">
+                                                    <label class="sr-only"
+                                                        for="slug-source-{{ $table['name'] }}-{{ $column['name'] }}">
+                                                        Slug source column
+                                                    </label>
+                                                    <select data-slug-source data-table="{{ $table['name'] }}"
+                                                        data-column="{{ $column['name'] }}"
+                                                        id="slug-source-{{ $table['name'] }}-{{ $column['name'] }}"
+                                                        class="w-full min-w-[200px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900">
+                                                        <option value="">Select source column</option>
+                                                    </select>
+                                                    <p class="text-xs text-slate-500">Select a source column to build the slug.</p>
                                                 </div>
                                             </div>
                                         </td>
