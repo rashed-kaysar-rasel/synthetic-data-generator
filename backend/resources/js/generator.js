@@ -58,6 +58,56 @@ function buildPayload(schema) {
     return payload;
 }
 
+function applyPayloadToForm(schema, payload) {
+    if (!payload || !payload.tables) {
+        return;
+    }
+
+    schema.tables.forEach((table) => {
+        const tablePayload = payload.tables[table.name];
+        if (!tablePayload) {
+            return;
+        }
+        const rowInput = document.querySelector(`[data-row-count][data-table="${table.name}"]`);
+        if (rowInput && typeof tablePayload.rowCount === 'number') {
+            rowInput.value = tablePayload.rowCount;
+        }
+
+        table.columns.forEach((column) => {
+            const columnPayload = tablePayload.columns?.[column.name];
+            if (!columnPayload) {
+                return;
+            }
+
+            const providerSelect = document.querySelector(
+                `[data-provider][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (providerSelect) {
+                providerSelect.value = columnPayload.provider || '';
+            }
+
+            populateSlugSourceSelect(schema, table.name, column.name);
+            const slugSelect = document.querySelector(
+                `[data-slug-source][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (slugSelect) {
+                slugSelect.value = columnPayload.slugSourceColumn || '';
+            }
+
+            const enumInput = document.querySelector(
+                `[data-enum-values][data-table="${table.name}"][data-column="${column.name}"]`
+            );
+            if (enumInput) {
+                const values = Array.isArray(columnPayload.enumValues) ? columnPayload.enumValues : [];
+                enumInput.value = values.join('\n');
+            }
+
+            updateEnumValuesVisibility(table.name, column.name);
+            updateSlugSourceVisibility(table.name, column.name);
+        });
+    });
+}
+
 function parseEnumValues(raw) {
     if (!raw) {
         return [];
@@ -114,6 +164,10 @@ function validateEnumSelections(schema) {
     });
 
     return errors;
+}
+
+function parseFormPayload() {
+    return buildPayload(window.generatorSchema);
 }
 function isTextLikeDataType(dataType) {
     if (!dataType) {
@@ -330,6 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('generation-form');
     const generateButton = document.getElementById('generate-button');
     const retryButton = document.getElementById('job-retry');
+    const configNameInput = document.getElementById('config-name');
+    const configSaveButton = document.getElementById('config-save');
+    const configSelect = document.getElementById('config-select');
+    const configImportButton = document.getElementById('config-import');
+    const configMessage = document.getElementById('config-message');
 
     if (!form || !generateButton) {
         return;
@@ -351,6 +410,17 @@ document.addEventListener('DOMContentLoaded', () => {
         removeTableFromSchema(window.generatorSchema, tableName);
     });
 
+    const pendingConfig = localStorage.getItem('savedConfigPayload');
+    if (pendingConfig) {
+        try {
+            const payload = JSON.parse(pendingConfig);
+            applyPayloadToForm(window.generatorSchema, payload);
+            localStorage.removeItem('savedConfigPayload');
+        } catch (error) {
+            localStorage.removeItem('savedConfigPayload');
+        }
+    }
+
     window.generatorSchema.tables.forEach((table) => {
         table.columns.forEach((column) => {
             updateEnumValuesVisibility(table.name, column.name);
@@ -367,6 +437,105 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const setConfigMessage = (message, isError) => {
+        if (!configMessage) {
+            return;
+        }
+        configMessage.textContent = message;
+        configMessage.classList.toggle('text-red-600', !!isError);
+        configMessage.classList.toggle('text-slate-600', !isError);
+    };
+
+    const loadSavedConfigs = async () => {
+        if (!window.generatorRoutes?.configsIndex || !configSelect) {
+            return;
+        }
+        const response = await fetch(window.generatorRoutes.configsIndex, {
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) {
+            return;
+        }
+        const result = await response.json();
+        const configs = result.data || [];
+
+        configSelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select saved configuration';
+        configSelect.appendChild(placeholder);
+
+        configs.forEach((config) => {
+            const option = document.createElement('option');
+            option.value = config.id;
+            option.textContent = config.name;
+            configSelect.appendChild(option);
+        });
+    };
+
+    if (configSaveButton) {
+        configSaveButton.addEventListener('click', async () => {
+            if (!window.generatorRoutes?.configsStore) {
+                return;
+            }
+            const name = configNameInput?.value.trim();
+            if (!name) {
+                setConfigMessage('Enter a configuration name.', true);
+                return;
+            }
+            setConfigMessage('Saving...', false);
+            const payload = parseFormPayload();
+            const response = await fetch(window.generatorRoutes.configsStore, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify({ name, payload }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const message = result?.errors
+                    ? Object.values(result.errors).flat().join(' | ')
+                    : 'Unable to save configuration.';
+                setConfigMessage(message, true);
+                return;
+            }
+            setConfigMessage('Configuration saved.', false);
+            configNameInput.value = '';
+            await loadSavedConfigs();
+        });
+    }
+
+    if (configImportButton) {
+        configImportButton.addEventListener('click', async () => {
+            const configId = configSelect?.value;
+            if (!configId || !window.generatorRoutes?.configsShowBase) {
+                setConfigMessage('Select a configuration to import.', true);
+                return;
+            }
+            setConfigMessage('Importing...', false);
+            const response = await fetch(`${window.generatorRoutes.configsShowBase}/${configId}`, {
+                headers: { Accept: 'application/json' },
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const message = result?.errors
+                    ? Object.values(result.errors).flat().join(' | ')
+                    : 'Unable to import configuration.';
+                setConfigMessage(message, true);
+                return;
+            }
+            applyPayloadToForm(window.generatorSchema, result.data?.payload);
+            setConfigMessage('Configuration imported.', false);
+        });
+    }
+
+    if (configSelect) {
+        loadSavedConfigs();
+    }
 
     const resetGenerateButton = () => {
         generateButton.disabled = false;

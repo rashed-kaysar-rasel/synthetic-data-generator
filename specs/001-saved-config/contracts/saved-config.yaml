@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: Synthetic Data Generator - Saved Configurations API
+  version: 1.0.0
+paths:
+  /configs:
+    get:
+      summary: List saved configurations
+      responses:
+        '200':
+          description: List of configurations
+    post:
+      summary: Save a configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, schemaSignature, payload]
+              properties:
+                name:
+                  type: string
+                schemaSignature:
+                  type: string
+                payload:
+                  type: object
+      responses:
+        '200':
+          description: Saved
+        '422':
+          description: Validation errors
+  /configs/{id}:
+    get:
+      summary: Fetch a saved configuration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Configuration
+        '404':
+          description: Not found

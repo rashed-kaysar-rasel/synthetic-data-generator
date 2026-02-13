@@ -69,6 +69,35 @@
                 </div>
             </div>
         </div>
+        @auth
+            <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-slate-900">Saved Configurations</h2>
+                        <p class="mt-1 text-xs text-slate-600">Save or import a full schema configuration.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input id="config-name" type="text" placeholder="Configuration name"
+                            class="w-[220px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900" />
+                        <button id="config-save" type="button"
+                            class="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800">
+                            Save
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap items-center gap-2">
+                    <select id="config-select"
+                        class="w-[260px] rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900">
+                        <option value="">Select saved configuration</option>
+                    </select>
+                    <button id="config-import" type="button"
+                        class="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-800 hover:border-slate-400 hover:bg-slate-50">
+                        Import
+                    </button>
+                    <span id="config-message" class="text-xs text-slate-600"></span>
+                </div>
+            </div>
+        @endauth
 
         @foreach ($schema['tables'] as $table)
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm" data-table-card>
@@ -195,7 +224,12 @@
         window.generatorSchema = @json($schema);
         window.generatorRoutes = {
             generate: "{{ route('generate.store') }}",
-            jobStatusBase: "{{ url('/jobs') }}"
+            jobStatusBase: "{{ url('/jobs') }}",
+            @auth
+            configsIndex: "{{ route('configs.index') }}",
+            configsStore: "{{ route('configs.store') }}",
+            configsShowBase: "{{ url('/configs') }}",
+            @endauth
         };
     </script>
 @endsection
