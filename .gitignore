@@ -11,10 +11,9 @@ node_modules/
 dist/
 build/
 *.log
-.env*
 
 # PHP
 vendor/
 *.log
 *.cache
-.env
+config.bat

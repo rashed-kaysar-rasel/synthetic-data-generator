@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\ProfileController;
+use App\Http\Controllers\SavedConfigController;
 
 // Page Routes
 Route::get('/', [SchemaController::class, 'index'])->name('generator.index');
@@ -28,6 +29,9 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/configs', [SavedConfigController::class, 'index'])->name('configs.index');
+    Route::post('/configs', [SavedConfigController::class, 'store'])->name('configs.store');
+    Route::get('/configs/{config}', [SavedConfigController::class, 'show'])->name('configs.show');
 });
 
 // Action Routes
